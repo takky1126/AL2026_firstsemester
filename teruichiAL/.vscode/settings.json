@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "fuckingAL.sln"
+    "dotnet.defaultSolution": "teruichiAL.slnx"
 }

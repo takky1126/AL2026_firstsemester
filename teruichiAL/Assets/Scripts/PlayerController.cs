@@ -1,39 +1,27 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
+using UnityEngine.InputSystem; // ã“ã‚ŒãŒå¿…è¦ï¼
 
-public class NewMonoBehaviourScript : MonoBehaviour
+public class PlayerController : MonoBehaviour
 {
-    private Rigidbody2D m_rigidbody;//Rigidbody2D‚Ö‚ÌƒVƒ‡[ƒgƒJƒbƒg
-    //private float m_fAxisHorizontal;//¶‰E•ûŒü‚Ì“ü—Í‚ğó‚¯æ‚é
-    //private float m_fAxisVertical;  //ã‰º•ûŒü‚Ì“ü—Í‚ğó‚¯æ‚é
-    private float m_fSpeed = 10f;    //ƒLƒƒƒ‰ƒNƒ^[‚ÌƒXƒs[ƒh
-    private Vector2 moveInput;
+    public float speed = 5f;
+    Rigidbody2D rb;
+    Vector2 moveInput;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        m_rigidbody = GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>();
     }
 
-    // Update is called once per frame
-    //void Update()
-    //{
-    //    m_fAxisHorizontal = Input.GetAxisRaw("Horizontal"); //¶‰E
-    //    m_fAxisVertical = Input.GetAxisRaw("Vertical");     //ã‰º
-    //}
-
-    void OnMove(InputValue value)
+    // æ–°ã—ã„å…¥åŠ›ã‚·ã‚¹ãƒ†ãƒ ã‹ã‚‰å‘¼ã°ã‚Œã‚‹é–¢æ•°
+    public void OnMove(InputValue value)
     {
+        // å…¥åŠ›å€¤ã‚’ Vector2 (Xã¨Yã®å‘ã) ã¨ã—ã¦å—ã‘å–ã‚‹
         moveInput = value.Get<Vector2>();
     }
-    
-    private void FixedUpdate()
-    {
-        //m_rigidbody.linearVelocity = new Vector2(
-        //    m_fAxisHorizontal * m_fSpeed,   //¶‰EˆÚ“®‚ÉˆÚ“®‘¬“x‚ğ—^‚¦‚é
-        //    m_fAxisVertical * m_fSpeed      //ã‰ºˆÚ“®‚ÉˆÚ“®‘¬“x‚ğ—^‚¦‚é
-        //);
 
-        m_rigidbody.linearVelocity = moveInput * m_fSpeed;
+    void FixedUpdate()
+    {
+        // ç‰©ç†ç§»å‹•ã®å‡¦ç†ã¯åŒã˜
+        rb.linearVelocity = moveInput * speed;
     }
 }
