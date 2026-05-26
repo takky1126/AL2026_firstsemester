@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // これが必要！
+using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
@@ -12,16 +12,13 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    // 新しい入力システムから呼ばれる関数
     public void OnMove(InputValue value)
     {
-        // 入力値を Vector2 (XとYの向き) として受け取る
         moveInput = value.Get<Vector2>();
     }
 
     void FixedUpdate()
     {
-        // 物理移動の処理は同じ
         rb.linearVelocity = moveInput * speed;
     }
 }
