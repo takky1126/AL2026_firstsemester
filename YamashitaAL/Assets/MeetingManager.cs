@@ -14,9 +14,6 @@ public class MeetingManager : MonoBehaviour
     public Button sendButton;
     public ScrollRect scrollRect;
 
-    [Header("Vote UI")]
-    public Button[] voteButtons;
-    public Button confirmVoteButton;
 
     [Header("Skip UI")]
     public Button skipButton;
@@ -41,7 +38,14 @@ public class MeetingManager : MonoBehaviour
     private int selectedPlayerId;
     private bool hasVoted = false;
 
+    [Header("Chat Toggle")]
+    public GameObject chatPanel;
+    public Button chatToggleButton;
 
+    private bool isChatOpen = false;
+
+    private PlayerRowUI selectedRow = null;
+    
     public class PlayerData
     {
         public int playerId;
@@ -62,8 +66,11 @@ public class MeetingManager : MonoBehaviour
 
 
         sendButton.onClick.AddListener(SendChatMessage);
-        confirmVoteButton.onClick.AddListener(ConfirmVote);
         skipButton.onClick.AddListener(OnSkipPressed);
+        chatToggleButton.onClick.AddListener(ToggleChatPanel);
+
+        chatPanel.SetActive(false);
+        isChatOpen = false;
 
         totalPlayers = playersParent.childCount;
         currentTime = votingTime;
@@ -72,20 +79,56 @@ public class MeetingManager : MonoBehaviour
         {
             PlayerRowUI row = child.GetComponent<PlayerRowUI>();
 
+            if (row == null) continue;
+
+            row.SetAlive(row.isAlive);//初回開始時にも生死の見た目へ反映
+
             int id = row.playerId;
             string name = row.GetName();
 
-            Button button = child.GetComponentInChildren<Button>();
-
             voteCounts[name] = 0;
 
-            button.onClick.AddListener(() => SelectPlayer(id, name));
+            // 最初はチェック/バツを隠す
+            row.ShowVoteActions(false);
+
+            // プレイヤー選択ボタン
+            if (row.selectButton != null)
+            {
+                row.selectButton.onClick.AddListener(() => SelectPlayer(id, name));
+            }
+
+            // チェックボタン：投票確定
+            if (row.checkButton != null)
+            {
+                row.checkButton.onClick.AddListener(OnCheckPressed);
+            }
+
+            // バツボタン：キャンセル
+            if (row.cancelButton != null)
+            {
+                row.cancelButton.onClick.AddListener(OnCancelPressed);
+            }
         }
 
         statusText.text = "No selection";
         voteCounts["Skip"] = 0;
         UpdateVoteStatusUI();
     }
+
+    
+    public void SetPlayerAliveState(int playerId, bool alive)
+    {
+        PlayerRowUI row = GetRowById(playerId);
+
+        if (row == null)
+        {
+            Debug.LogWarning("PlayerRow not found: " + playerId);
+            return;
+        }
+
+        row.SetAlive(alive);
+    }
+
 
     void SendChatMessage()
     {
@@ -149,28 +192,26 @@ public class MeetingManager : MonoBehaviour
     //  選択
     void SelectPlayer(int playerId, string playerName)
     {
-        //  投票済みなら何もしない
         if (hasVoted) return;
         if (!isVotingActive) return;
 
-        
         PlayerRowUI row = GetRowById(playerId);
-        if (row != null && !row.isAlive) return;
 
+        if (row == null) return;
+        if (!row.isAlive) return;
+
+        // 他のRowのチェック/バツを全部消す
+        HideAllVoteActions();
 
         selectedPlayerId = playerId;
         selectedPlayer = playerName;
+        selectedRow = row;
 
-        //  Skipなら即投票
-        if (playerName.ToLower().Trim() == "skip")
-        {
-            ConfirmVote();
-            return;
-        }
+        // 選んだRowだけチェック/バツを出す
+        selectedRow.ShowVoteActions(true);
 
         statusText.text = "Select: " + playerName;
     }
-
     
     PlayerRowUI GetRowById(int id)
     {
@@ -218,16 +259,13 @@ public class MeetingManager : MonoBehaviour
             statusText.text = "Select: " + selectedPlayer + " voted";
         }
 
-        hasVoted = true;
+        hasVoted = true; 
+        HideAllVoteActions();
 
         // ボタンもロック（おすすめ）
-        confirmVoteButton.interactable = false;
         skipButton.interactable = false;
 
-        foreach (Button button in voteButtons)
-        {
-            button.interactable = false;
-        }
+        SetAllPlayerSelectButtonsInteractable(false);
         if (voteMap.Count >= GetAlivePlayerCount())
         {
             EndVoting();
@@ -247,6 +285,7 @@ public class MeetingManager : MonoBehaviour
             return;
         }
 
+        HideAllVoteActions();   
         selectedPlayer = "Skip";
         selectedPlayerId = -1; // Skipは特別扱い
 
@@ -257,6 +296,8 @@ public class MeetingManager : MonoBehaviour
     {
         isVotingActive = false;
 
+        HideAllVoteActions();
+
         Debug.Log("Voting ended");
 
         string result = CalculateResult();
@@ -264,27 +305,16 @@ public class MeetingManager : MonoBehaviour
         statusText.text = result;
 
         // UIロック（おすすめ）
-        confirmVoteButton.interactable = false;
         skipButton.interactable = false;
-
-        foreach (Transform child in playersParent)
-        {
-            Button btn = child.GetComponentInChildren<Button>();
-            
-            if (btn != null)
+        SetAllPlayerSelectButtonsInteractable(false);
+        
+        if (!result.Contains("No one"))
             {
-                btn.interactable = false;
+                string eliminated = result.Replace(" was ejected", "");
+                KillPlayerByName(eliminated);
             }
 
         }
-        
-    if (!result.Contains("No one"))
-        {
-            string eliminated = result.Replace(" was ejected", "");
-            KillPlayerByName(eliminated);
-        }
-
-    }
 
     void UpdateVoteStatusUI()
     {
@@ -297,7 +327,7 @@ public class MeetingManager : MonoBehaviour
             bool voted = voteMap.ContainsKey(row.playerId);
             row.SetVoted(voted);
         }
-}
+    }
 
     string CalculateResult()
     {
@@ -332,6 +362,20 @@ public class MeetingManager : MonoBehaviour
         return winner + " was ejected";
     }
 
+    void SetAllPlayerSelectButtonsInteractable(bool interactable)
+    {
+        foreach (Transform child in playersParent)
+        {
+            PlayerRowUI row = child.GetComponent<PlayerRowUI>();
+
+            if (row == null) continue;
+
+            if (row.selectButton != null)
+            {
+                row.selectButton.interactable = interactable && row.isAlive;
+            }
+        }
+}
     
 
 
@@ -394,20 +438,13 @@ public class MeetingManager : MonoBehaviour
             string name = row.GetName();
             voteCounts[name] = 0;
 
-            Button button = row.GetComponentInChildren<Button>();
-
-            if (button != null)
-            {
-                // 生きている人だけ押せる
-                button.interactable = row.isAlive;
-            }
+            row.SetAlive(row.isAlive);
         }
 
         // Skip票も再登録
         voteCounts["Skip"] = 0;
 
         // Confirm / Skipを復活
-        confirmVoteButton.interactable = true;
         skipButton.interactable = true;
 
         // 表示リセット
@@ -416,4 +453,59 @@ public class MeetingManager : MonoBehaviour
         // 投票状態表示を更新
         UpdateVoteStatusUI();
     }
+
+    void ToggleChatPanel()
+    {
+        isChatOpen = !isChatOpen;
+        chatPanel.SetActive(isChatOpen);
+
+        if (isChatOpen)
+        {
+            chatInputField.ActivateInputField();
+        }
+    }
+
+    
+void OnCheckPressed()
+{
+    if (hasVoted) return;
+    if (!isVotingActive) return;
+
+    if (selectedRow == null)
+    {
+        statusText.text = "No selection";
+        return;
+    }
+    ConfirmVote();
+
+    HideAllVoteActions();
+    }
+
+    void OnCancelPressed()
+    {
+        if (hasVoted) return;
+        if (!isVotingActive) return;
+
+        selectedPlayer = null;
+        selectedPlayerId = 0;
+        selectedRow = null;
+
+        HideAllVoteActions();
+
+        statusText.text = "No selection";
+    }
+
+    void HideAllVoteActions()
+    {
+        foreach (Transform child in playersParent)
+        {
+            PlayerRowUI row = child.GetComponent<PlayerRowUI>();
+
+            if (row == null) continue;
+
+            row.ShowVoteActions(false);
+        }
+    }
+
+
 }
