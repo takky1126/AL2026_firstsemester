@@ -32,10 +32,13 @@ public class MeetingManager : MonoBehaviour
     public float votingTime = 60f;   // 秒
     private float currentTime;
     private bool isVotingActive = true;
+    private bool isVotingEnded = false;
+
 
     private string selectedPlayer = null;
     private int selectedPlayerId;
     private bool hasVoted = false;
+    private const int SkipVoteId = -1;
 
     [Header("Chat Toggle")]
     public GameObject chatPanel;
@@ -252,7 +255,7 @@ public class MeetingManager : MonoBehaviour
         SetAllPlayerSelectButtonsInteractable(false);
         if (voteMap.Count >= GetAlivePlayerCount())
         {
-            EndVoting();
+            FinishVoting(false);
         }
         
 
@@ -270,13 +273,16 @@ public class MeetingManager : MonoBehaviour
 
         HideAllVoteActions();   
         selectedPlayer = "Skip";
-        selectedPlayerId = -1; // Skipは特別扱い
+        selectedPlayerId = SkipVoteId; // Skipは特別扱い
 
         ConfirmVote();
     }
 
     void EndVoting()
     {
+        if (isVotingEnded) return;
+
+        isVotingEnded = true;
         isVotingActive = false;
 
         HideAllVoteActions();
@@ -284,19 +290,20 @@ public class MeetingManager : MonoBehaviour
         Debug.Log("Voting ended");
 
         string result = CalculateResult();
+        Debug.Log(result);
 
-        // UIロック（おすすめ）
         skipButton.interactable = false;
         SetAllPlayerSelectButtonsInteractable(false);
-        
-        if (!result.Contains("No one"))
-            {
-                string eliminated = result.Replace(" was ejected", "");
-                KillPlayerByName(eliminated);
-            }
 
+        if (!result.Contains("No one"))
+        {
+            string eliminated = result.Replace(" was ejected", "").Trim();
+            KillPlayerByName(eliminated);
         }
 
+        // ここで会議終了後の処理を呼べる
+        // 例：GameManagerへ通知する、画面を閉じる、次フェーズへ進むなど
+    }
     void UpdateVoteStatusUI()
     {
         foreach (Transform child in playersParent)
@@ -382,20 +389,22 @@ public class MeetingManager : MonoBehaviour
         if (currentTime <= 0f)
         {
             currentTime = 0f;
-            EndVoting();
+            FinishVoting(true);
         }
 
     }
 
-        public void StartNewMeeting()
+    public void StartNewMeeting()
     {
         // 選択状態をリセット
         selectedPlayer = null;
         selectedPlayerId = 0;
+        selectedRow = null;
 
         // 自分の投票状態をリセット
         hasVoted = false;
 
+        isVotingEnded = false;
         // 投票フェーズ再開
         isVotingActive = true;
 
@@ -427,8 +436,11 @@ public class MeetingManager : MonoBehaviour
         // Skip票も再登録
         voteCounts["Skip"] = 0;
 
-        // Confirm / Skipを復活
-        skipButton.interactable = true;
+        PlayerRowUI me = GetRowById(myPlayerId);
+        skipButton.interactable = (me ==null || me.isAlive); // 自分が生存している場合のみSkip可能
+        SetAllPlayerSelectButtonsInteractable(true);
+        HideAllVoteActions();
+
 
         // 投票状態表示を更新
         UpdateVoteStatusUI();
@@ -483,6 +495,41 @@ void OnCheckPressed()
 
             row.ShowVoteActions(false);
         }
+    }
+    void AddMissingAliveVotesAsSkip()
+    {
+    foreach (Transform child in playersParent)
+    {
+        PlayerRowUI row = child.GetComponent<PlayerRowUI>();
+
+        if (row == null) continue;
+
+        // 死亡者は投票人数に含めない
+        if (!row.isAlive) continue;
+
+        // すでに投票している人は何もしない
+        if (voteMap.ContainsKey(row.playerId)) continue;
+
+        // 未投票の生存者をSkip扱いにする
+        voteMap[row.playerId] = SkipVoteId;
+        voteCounts["Skip"]++;
+
+        Debug.Log(row.GetName() + " did not vote. Counted as Skip.");
+    }
+
+    UpdateVoteStatusUI();
+    }
+
+    void FinishVoting(bool countMissingAsSkip)
+    {
+        if (isVotingEnded) return;
+
+        if (countMissingAsSkip)
+        {
+            AddMissingAliveVotesAsSkip();
+        }
+
+        EndVoting();
     }
 
 
