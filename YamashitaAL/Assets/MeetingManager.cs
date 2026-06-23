@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 public class MeetingManager : MonoBehaviour
 {
     [Header("UI")]
-    public TMP_Text statusText;   // ← 統一したText
+
     public TMP_Text chatLogText;
     public TMP_InputField chatInputField;
     public Button sendButton;
@@ -25,7 +25,6 @@ public class MeetingManager : MonoBehaviour
     private Dictionary<string, int> voteCounts = new Dictionary<string, int>();
     private Dictionary<int, int> voteMap = new Dictionary<int, int>();
     public int myPlayerId = 1;
-    private int totalPlayers;   // 全体人数
 
     [Header("Timer")]
     public TMP_Text timerText;
@@ -72,7 +71,6 @@ public class MeetingManager : MonoBehaviour
         chatPanel.SetActive(false);
         isChatOpen = false;
 
-        totalPlayers = playersParent.childCount;
         currentTime = votingTime;
 
         foreach (Transform child in playersParent)
@@ -110,7 +108,6 @@ public class MeetingManager : MonoBehaviour
             }
         }
 
-        statusText.text = "No selection";
         voteCounts["Skip"] = 0;
         UpdateVoteStatusUI();
     }
@@ -161,7 +158,7 @@ public class MeetingManager : MonoBehaviour
 
             if (row == null) continue;
 
-            if (row.GetName() == playerName)
+            if (row.GetName().Trim() == playerName.Trim())
             {
                 row.SetAlive(false);
                 Debug.Log(playerName + " is dead");
@@ -209,8 +206,6 @@ public class MeetingManager : MonoBehaviour
 
         // 選んだRowだけチェック/バツを出す
         selectedRow.ShowVoteActions(true);
-
-        statusText.text = "Select: " + playerName;
     }
     
     PlayerRowUI GetRowById(int id)
@@ -233,7 +228,6 @@ public class MeetingManager : MonoBehaviour
         PlayerRowUI me = GetRowById(myPlayerId);
         if (me != null && !me.isAlive)
         {
-            statusText.text = "You are dead and cannot vote.";
             return;
         }
         // すでに投票してたら何もしない
@@ -241,7 +235,6 @@ public class MeetingManager : MonoBehaviour
 
         if (string.IsNullOrEmpty(selectedPlayer))
         {
-            statusText.text = "No selection";
             return;
         }
 
@@ -249,15 +242,6 @@ public class MeetingManager : MonoBehaviour
         voteMap[myPlayerId] = selectedPlayerId;
         UpdateVoteStatusUI();
 
-        // Skip
-        if (selectedPlayer.ToLower().Trim() == "skip")
-        {
-            statusText.text = "Skipped";
-        }
-        else
-        {
-            statusText.text = "Select: " + selectedPlayer + " voted";
-        }
 
         hasVoted = true; 
         HideAllVoteActions();
@@ -281,7 +265,6 @@ public class MeetingManager : MonoBehaviour
 
         PlayerRowUI me = GetRowById(myPlayerId);
         if (me != null && !me.isAlive)        {
-            statusText.text = "You are dead and cannot vote.";
             return;
         }
 
@@ -301,8 +284,6 @@ public class MeetingManager : MonoBehaviour
         Debug.Log("Voting ended");
 
         string result = CalculateResult();
-
-        statusText.text = result;
 
         // UIロック（おすすめ）
         skipButton.interactable = false;
@@ -382,11 +363,13 @@ public class MeetingManager : MonoBehaviour
     
     void Update()
     {
-        if (Keyboard.current.enterKey.wasPressedThisFrame)
+        if (isChatOpen &&
+            chatInputField.isFocused &&
+            Keyboard.current.enterKey.wasPressedThisFrame)
         {
-            Debug.Log("Enter pressed");
             SendChatMessage();
         }
+
         
         if (!isVotingActive) return;
 
@@ -447,9 +430,6 @@ public class MeetingManager : MonoBehaviour
         // Confirm / Skipを復活
         skipButton.interactable = true;
 
-        // 表示リセット
-        statusText.text = "No selection";
-
         // 投票状態表示を更新
         UpdateVoteStatusUI();
     }
@@ -473,7 +453,6 @@ void OnCheckPressed()
 
     if (selectedRow == null)
     {
-        statusText.text = "No selection";
         return;
     }
     ConfirmVote();
@@ -492,7 +471,6 @@ void OnCheckPressed()
 
         HideAllVoteActions();
 
-        statusText.text = "No selection";
     }
 
     void HideAllVoteActions()

@@ -18,7 +18,10 @@ public class PlayerRowUI : MonoBehaviour
     public Image playerImage;
     public Sprite normalSprite;
     public Sprite votedSprite;
-    public Sprite deadSprite;
+
+    [Header("Dead Overlay")]
+    public Image deadOverlayImage;
+    public Image deadOverlayfullImage;
 
 
     public bool isAlive = true;
@@ -72,18 +75,17 @@ public class PlayerRowUI : MonoBehaviour
             nameText.color = alive ? Color.black : Color.gray;
         }
 
-        if (playerImage != null)
+       
+        if (playerImage != null && normalSprite != null)
         {
-            if (!alive && deadSprite != null)
-            {
-                playerImage.sprite = deadSprite;
-            }
-            else if (alive && normalSprite != null)
-            {
-                playerImage.sprite = normalSprite;
-            }
+            playerImage.sprite = normalSprite;
         }
 
+        if (deadOverlayImage != null && deadOverlayfullImage != null)
+        {
+            deadOverlayImage.gameObject.SetActive(!alive);
+            deadOverlayfullImage.gameObject.SetActive(!alive);
+        }
 
         if (selectButton != null)
         {
