@@ -39,17 +39,42 @@ public partial class TaskManager : MonoBehaviour
     }
 
     // ★UIオブジェクトの代わりに「シーン名」を受け取るように変更
+    // ★UIオブジェクトの代わりに「シーン名」を受け取るように変更
+    // TaskManager.cs の修正版
+
     public void OpenTaskScene(string sceneName)
     {
         SetPlayerMovement(false); // プレイヤーを止める
-        SceneManager.LoadScene(sceneName, LoadSceneMode.Additive); // ★ポイント：上乗せでシーンを開く
+
+        // メインカメラを取得して、描画優先度を下げる
+        GameObject mainCamObj = GameObject.FindWithTag("MainCamera");
+        if (mainCamObj != null)
+        {
+            var camera = mainCamObj.GetComponent<Camera>();
+            if (camera != null)
+            {
+                camera.depth = -1; // タスクカメラ（初期値0など）より低くする
+            }
+        }
+
+        SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
     }
 
-    // タスクが完了したときに呼ばれる処理
     public void CompleteTaskScene(string sceneName)
     {
-        SceneManager.UnloadSceneAsync(sceneName); // ★タスクシーンを閉じる
-        SetPlayerMovement(true);  // プレイヤーを動けるようにする
+        SceneManager.UnloadSceneAsync(sceneName);
+        SetPlayerMovement(true);
+
+        // メインカメラの描画優先度を元に戻す
+        GameObject mainCamObj = GameObject.FindWithTag("MainCamera");
+        if (mainCamObj != null)
+        {
+            var camera = mainCamObj.GetComponent<Camera>();
+            if (camera != null)
+            {
+                camera.depth = 0; // 元の優先度に戻す
+            }
+        }
 
         completedTasks++;
         UpdateTaskUI();
@@ -60,10 +85,21 @@ public partial class TaskManager : MonoBehaviour
         }
     }
 
-    // キャンセルして閉じるとき用
     public void CloseTaskScene(string sceneName)
     {
         SceneManager.UnloadSceneAsync(sceneName);
+
+        // メインカメラの描画優先度を元に戻す
+        GameObject mainCamObj = GameObject.FindWithTag("MainCamera");
+        if (mainCamObj != null)
+        {
+            var camera = mainCamObj.GetComponent<Camera>();
+            if (camera != null)
+            {
+                camera.depth = 0;
+            }
+        }
+
         SetPlayerMovement(true);
     }
 

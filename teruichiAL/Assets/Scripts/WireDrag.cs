@@ -43,8 +43,27 @@ public class WireDrag : MonoBehaviour
         if (!dragging)
             return;
 
-        Vector3 mouse =
-            Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        // ★ Camera.main を使わず、今映しているタスク用のカメラを確実に取得する
+        Camera taskCamera = null;
+
+        // 自分のオブジェクトと同じシーン内にあるカメラを探す
+        foreach (var cam in FindObjectsByType<Camera>(FindObjectsSortMode.None))
+        {
+            if (cam.gameObject.scene == gameObject.scene)
+            {
+                taskCamera = cam;
+                break;
+            }
+        }
+
+        // もしシーン内のカメラが見つからなければ、予備として Camera.main を使う
+        if (taskCamera == null)
+        {
+            taskCamera = Camera.main;
+        }
+
+        // 取得したタスク用カメラの基準でマウス座標をワールド座標に変換する
+        Vector3 mouse = taskCamera.ScreenToWorldPoint(Input.mousePosition);
 
         mouse.z = 0;
 
