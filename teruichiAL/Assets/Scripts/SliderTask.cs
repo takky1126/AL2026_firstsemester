@@ -76,14 +76,15 @@ public class Download : MonoBehaviour
         {
             timeText.text = "0s";
         }
+        Debug.Log("ダウンロード完了！");
 
-        Debug.Log("ダウンロード完了！ゲームを終了します。");
+        // 自分が所属しているタスクシーンの名前を取得して、TaskManagerに伝える
+        string currentSceneName = gameObject.scene.name;
+        TaskManager.Instance.CompleteTaskScene(currentSceneName); // 👈 新しいメソッド名に変える
 
-        Application.Quit();
-
-#if UNITY_EDITOR
-        // Unityエディタ上でのテストプレイも自動で停止させる設定
-        UnityEditor.EditorApplication.isPlaying = false;
-#endif
+//#if UNITY_EDITOR
+//        // Unityエディタ上でのテストプレイも自動で停止させる設定
+//        UnityEditor.EditorApplication.isPlaying = false;
+//#endif
     }
 }

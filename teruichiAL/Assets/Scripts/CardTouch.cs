@@ -113,12 +113,24 @@ public class CardTouch : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDra
     {
         isUnlocked = true;
 
-        // Success message (Changes text color to green)
         if (statusText != null)
         {
             statusText.text = "<color=green>ACCESS GRANTED</color>";
         }
 
         Debug.Log("Task Complete! Door Unlocked.");
+
+        // ★ここを追加：1秒後にタスク画面を閉じてカウントを増やす
+        Invoke("NotifyManagerComplete", 1.0f);
+    }
+
+    private void NotifyManagerComplete()
+    {
+        // スクリプトの最後の方の処理
+        Debug.Log("ダウンロード完了！");
+
+        // 自分の所属しているシーンの名前を取得して渡す
+        string currentSceneName = gameObject.scene.name;
+        TaskManager.Instance.CompleteTaskScene(currentSceneName);
     }
 }
