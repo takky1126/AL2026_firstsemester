@@ -12,6 +12,18 @@ EditorBuildSettings:
     path: Assets/Scenes/Move 2.unity
     guid: 81c81d188a38f684cbdd865bdc4e06d5
   - enabled: 1
+    path: Assets/Scenes/ipadd.unity
+    guid: 14f569520159fe34cac5159f3d1b881b
+  - enabled: 1
+    path: Assets/Scenes/Card.unity
+    guid: 8f11184d6feef134aa7d5e26a10b572b
+  - enabled: 1
+    path: Assets/Scenes/Wire.unity
+    guid: 8c50650b40d905042886aded2a3e8cf6
+  - enabled: 1
+    path: Assets/Scenes/Upload.unity
+    guid: 545c8947eccbe9f4bb065bc518fc897b
+  - enabled: 1
     path: Assets/Scenes/Move.unity
     guid: edb16bed09f10fb44926b5ef9b982437
   m_configObjects:
