@@ -6,9 +6,23 @@ public class PlayerRowUI : MonoBehaviour
 {   
     public int playerId;
     public TMP_Text nameText;
+
     
-    [Header("Vote Status")]
-    public TMP_Text voteStatusText;
+    [Header("Buttons")]
+    public Button selectButton;
+    public Button checkButton;
+    public Button cancelButton;
+
+    
+    [Header("Player Image")]
+    public Image playerImage;
+    public Sprite normalSprite;
+    public Sprite votedSprite;
+
+    [Header("Dead Overlay")]
+    public Image deadOverlayImage;
+    public Image deadOverlayfullImage;
+
 
     public bool isAlive = true;
 
@@ -16,46 +30,69 @@ public class PlayerRowUI : MonoBehaviour
     {
         return nameText.text;
     }
+    
+    public void ShowVoteActions(bool show)
+    {
+        if (checkButton != null)
+        {
+            checkButton.gameObject.SetActive(show);
+        }
+
+        if (cancelButton != null)
+        {
+            cancelButton.gameObject.SetActive(show);
+        }
+    }
 
     
     public void SetVoted(bool voted)
     {
-        if (voteStatusText == null) return;
-
-        if (voted)
+        if (playerImage == null) return;
+        if (!isAlive) return;
+        
+        if(voted)
         {
-            voteStatusText.text = "VOTED";
-            voteStatusText.color = Color.green;
+            if(votedSprite != null)
+            {
+                playerImage.sprite = votedSprite;
+            }
         }
         else
         {
-            voteStatusText.text = "WAIT";
-            voteStatusText.color = Color.gray;
+            if(normalSprite != null)
+            {
+                playerImage.sprite = normalSprite;
+            }
         }
     }
-
+    
     public void SetAlive(bool alive)
     {
         isAlive = alive;
-        
-    if (nameText != null)
+
+        if (nameText != null)
         {
-            if (!alive)
-            {
-                nameText.color = Color.gray;
-            }
-            else
-            {
-                nameText.color = Color.white;
-            }
+            nameText.color = alive ? Color.black : Color.gray;
         }
 
-        Button btn = GetComponentInChildren<Button>();
-
-        if (btn != null)
+       
+        if (playerImage != null && normalSprite != null)
         {
-            btn.interactable = alive;
+            playerImage.sprite = normalSprite;
         }
+
+        if (deadOverlayImage != null && deadOverlayfullImage != null)
+        {
+            deadOverlayImage.gameObject.SetActive(!alive);
+            deadOverlayfullImage.gameObject.SetActive(!alive);
+        }
+
+        if (selectButton != null)
+        {
+            selectButton.interactable = alive;
+        }
+
+        ShowVoteActions(false);
 
     }
 
